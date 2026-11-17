@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>칼바람 나락 5:5 추첨기</title>
+<meta name="description" content="칼바람 나락 5:5 랜덤 챔피언 추첨기 · 최신 패치 자동 반영 (Riot Data Dragon)" />
+<meta name="theme-color" content="#070b12" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E" />
+<style>
+  :root {
+    --bg: #070b12;
+    --bg-2: #0b1220;
+    --line: #1d2a3d;
+    --txt: #e8eef7;
+    --dim: #8b9bb4;
+    --gold: #c8aa6e;
+    --blue: #4a9dff;
+    --blue-deep: #0e2745;
+    --red: #ff5a5a;
+    --red-deep: #3a1218;
+    --radius: 14px;
+    font-synthesis: none;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+  }
+
+  body {
+    background:
+      radial-gradient(900px 520px at 12% -10%, rgba(74, 157, 255, .18), transparent 60%),
+      radial-gradient(900px 520px at 88% -10%, rgba(255, 90, 90, .16), transparent 60%),
+      linear-gradient(180deg, var(--bg-2), var(--bg) 42%);
+    background-attachment: fixed;
+    color: var(--txt);
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR",
+      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.45;
+    padding: 22px 16px 40px;
+  }
+
+  .app { max-width: 1060px; margin: 0 auto; }
+
+  /* ── header ── */
+  header { text-align: center; margin-bottom: 20px; }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(21px, 5.2vw, 30px);
+    font-weight: 800;
+    letter-spacing: -.02em;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  h1 .vs {
+    font-size: .78em;
+    font-weight: 800;
+    color: var(--gold);
+    letter-spacing: .04em;
+  }
+
+  .meta {
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: var(--dim);
+    min-height: 20px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .meta b { color: var(--gold); font-weight: 700; }
+  .meta .dot { opacity: .45; margin: 0 7px; }
+
+  .err {
+    display: none;
+    margin: 14px auto 0;
+    max-width: 560px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 90, 90, .45);
+    background: rgba(255, 90, 90, .1);
+    border-radius: 12px;
+    font-size: 13px;
+    color: #ffd2d2;
+    text-align: left;
+  }
+
+  .err.show { display: block; }
+  .err button {
+    margin-top: 10px;
+    background: rgba(255, 255, 255, .1);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, .22);
+    border-radius: 9px;
+    padding: 7px 12px;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  /* ── controls ── */
+  .controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 18px auto 22px;
+  }
+
+  .seg {
+    display: inline-flex;
+    padding: 4px;
+    gap: 3px;
+    background: rgba(255, 255, 255, .05);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+
+  .seg button {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--dim);
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 700;
+    padding: 9px 15px;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background .16s, color .16s, box-shadow .16s;
+    white-space: nowrap;
+  }
+
+  .seg button:hover { color: var(--txt); }
+
+  .seg button[aria-pressed="true"] {
+    background: linear-gradient(180deg, #2c3a52, #202c3f);
+    color: #fff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 2px 10px rgba(0, 0, 0, .35);
+  }
+
+  .actions { display: inline-flex; gap: 8px; }
+
+  .btn {
+    appearance: none;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, .05);
+    color: var(--txt);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 11px 18px;
+    border-radius: 11px;
+    cursor: pointer;
+    transition: transform .08s, background .16s, border-color .16s, opacity .16s;
+    white-space: nowrap;
+  }
+
+  .btn:hover { background: rgba(255, 255, 255, .1); }
+  .btn:active { transform: translateY(1px); }
+
+  .btn.primary {
+    background: linear-gradient(180deg, #d9bd82, #b7934f);
+    border-color: #e3cb96;
+    color: #20180a;
+    box-shadow: 0 6px 20px rgba(200, 170, 110, .22);
+  }
+
+  .btn.primary:hover { background: linear-gradient(180deg, #e4cb92, #c3a05c); }
+
+  .btn:disabled { opacity: .45; cursor: default; transform: none; }
+  .btn.copied { border-color: rgba(120, 220, 150, .6); color: #9df0b8; }
+
+  /* ── board ── */
+  .board {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  @media (min-width: 780px) {
+    .board { grid-template-columns: 1fr 1fr; gap: 18px; }
+  }
+
+  .team {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 13px;
+    background: rgba(255, 255, 255, .022);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .team::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 2px;
+  }
+
+  .team.blue {
+    border-color: rgba(74, 157, 255, .38);
+    background:
+      linear-gradient(180deg, rgba(74, 157, 255, .1), transparent 55%),
+      rgba(255, 255, 255, .022);
+    box-shadow: 0 0 0 1px rgba(74, 157, 255, .05), 0 12px 34px -18px rgba(74, 157, 255, .55);
+  }
+  .team.blue::before { background: linear-gradient(90deg, transparent, var(--blue), transparent); }
+
+  .team.red {
+    border-color: rgba(255, 90, 90, .38);
+    background:
+      linear-gradient(180deg, rgba(255, 90, 90, .1), transparent 55%),
+      rgba(255, 255, 255, .022);
+    box-shadow: 0 0 0 1px rgba(255, 90, 90, .05), 0 12px 34px -18px rgba(255, 90, 90, .55);
+  }
+  .team.red::before { background: linear-gradient(90deg, transparent, var(--red), transparent); }
+
+  .team-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 1px 2px 11px;
+  }
+
+  .team-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: .01em;
+  }
+
+  .team-name .chip {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .team.blue .team-name { color: #9fcaff; }
+  .team.blue .chip { background: var(--blue); box-shadow: 0 0 10px var(--blue); }
+  .team.red .team-name { color: #ffb3b3; }
+  .team.red .chip { background: var(--red); box-shadow: 0 0 10px var(--red); }
+
+  .team-note { font-size: 11.5px; color: var(--dim); letter-spacing: .04em; }
+
+  .slots { display: grid; gap: 7px; }
+
+  .slot {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 7px 9px 7px 7px;
+    border-radius: 11px;
+    background: rgba(3, 7, 13, .55);
+    border: 1px solid rgba(255, 255, 255, .055);
+    min-height: 62px;
+    transition: border-color .2s, background .2s;
+  }
+
+  .slot.empty { border-style: dashed; border-color: rgba(255, 255, 255, .1); background: rgba(3, 7, 13, .3); }
+
+  .portrait {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    border-radius: 9px;
+    overflow: hidden;
+    background: #101a28;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, .1);
+  }
+
+  .portrait img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    opacity: 0;
+    transition: opacity .22s;
+  }
+  .portrait img.ready { opacity: 1; }
+
+  .team.blue .portrait { box-shadow: 0 0 0 1px rgba(74, 157, 255, .5); }
+  .team.red .portrait { box-shadow: 0 0 0 1px rgba(255, 90, 90, .5); }
+
+  .info { min-width: 0; flex: 1 1 auto; }
+
+  .cname {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .csub {
+    font-size: 11.5px;
+    color: var(--dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+  }
+
+  .slot.rolling .cname { color: var(--dim); }
+  .slot.pulse { animation: pop .34s ease-out; }
+
+  @keyframes pop {
+    0% { transform: scale(.975); border-color: rgba(255, 255, 255, .3); }
+    100% { transform: scale(1); }
+  }
+
+  footer {
+    margin-top: 22px;
+    text-align: center;
+    font-size: 11.5px;
+    color: #5f6f87;
+    line-height: 1.7;
+  }
+
+  footer a { color: #7d8ea8; }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 26px;
+    transform: translate(-50%, 16px);
+    background: #101a28;
+    border: 1px solid var(--line);
+    color: var(--txt);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 16px;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s, transform .2s;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (max-width: 400px) {
+    .portrait { width: 42px; height: 42px; flex-basis: 42px; }
+    .slot { min-height: 56px; gap: 9px; }
+    .cname { font-size: 14px; }
+    .seg button { padding: 8px 12px; font-size: 13px; }
+    .btn { padding: 10px 14px; font-size: 13.5px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>칼바람 나락 <span class="vs">5 : 5</span> 추첨기</h1>
+    <p class="meta" id="meta">최신 패치 정보를 불러오는 중…</p>
+    <div class="err" id="err">
+      <div id="err-msg">챔피언 데이터를 불러오지 못했습니다.</div>
+      <button type="button" id="retry">다시 시도</button>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="seg" role="group" aria-label="중복 설정">
+      <button type="button" id="dup-no" data-dup="no" aria-pressed="true">중복 불가</button>
+      <button type="button" id="dup-yes" data-dup="yes" aria-pressed="false">중복 허용</button>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn primary" id="roll" disabled>다시 뽑기</button>
+      <button type="button" class="btn" id="copy" disabled>결과 복사</button>
+    </div>
+  </div>
+
+  <main class="board">
+    <section class="team blue" aria-labelledby="blue-title">
+      <div class="team-head">
+        <span class="team-name" id="blue-title"><span class="chip"></span>블루팀</span>
+        <span class="team-note">BLUE · 5</span>
+      </div>
+      <div class="slots" id="blue-slots"></div>
+    </section>
+
+    <section class="team red" aria-labelledby="red-title">
+      <div class="team-head">
+        <span class="team-name" id="red-title"><span class="chip"></span>레드팀</span>
+        <span class="team-note">RED · 5</span>
+      </div>
+      <div class="slots" id="red-slots"></div>
+    </section>
+  </main>
+
+  <footer>
+    데이터 · 이미지 © Riot Games · <span id="ddversion">Data Dragon</span><br />
+    페이지를 열 때마다 최신 패치 챔피언이 자동으로 반영됩니다.
+  </footer>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var VERSIONS_URL = "https://ddragon.leagueoflegends.com/api/versions.json";
+  var CDN = "https://ddragon.leagueoflegends.com/cdn/";
+  var ROLE_KO = {
+    Fighter: "전사",
+    Tank: "탱커",
+    Mage: "마법사",
+    Marksman: "원거리 딜러",
+    Assassin: "암살자",
+    Support: "서포터"
+  };
+
+  var el = {
+    meta: document.getElementById("meta"),
+    err: document.getElementById("err"),
+    errMsg: document.getElementById("err-msg"),
+    retry: document.getElementById("retry"),
+    roll: document.getElementById("roll"),
+    copy: document.getElementById("copy"),
+    dupNo: document.getElementById("dup-no"),
+    dupYes: document.getElementById("dup-yes"),
+    blue: document.getElementById("blue-slots"),
+    red: document.getElementById("red-slots"),
+    toast: document.getElementById("toast"),
+    ddversion: document.getElementById("ddversion")
+  };
+
+  var state = {
+    version: null,
+    champions: [],
+    allowDup: false,
+    rolling: false,
+    result: null // { blue: [champ], red: [champ] }
+  };
+
+  /* ── slots skeleton ── */
+  function buildSlots(container) {
+    container.innerHTML = "";
+    for (var i = 0; i < 5; i++) {
+      var slot = document.createElement("div");
+      slot.className = "slot empty";
+      slot.innerHTML =
+        '<div class="portrait"><img alt="" /></div>' +
+        '<div class="info"><div class="cname">—</div><div class="csub">&nbsp;</div></div>';
+      container.appendChild(slot);
+    }
+  }
+  buildSlots(el.blue);
+  buildSlots(el.red);
+
+  function slotsOf(container) {
+    return Array.prototype.slice.call(container.children);
+  }
+
+  function paint(slot, champ, fade) {
+    var img = slot.querySelector("img");
+    var name = slot.querySelector(".cname");
+    var sub = slot.querySelector(".csub");
+    slot.classList.remove("empty");
+    name.textContent = champ.name;
+    sub.textContent = champ.role + " · " + champ.id;
+    var src = CDN + state.version + "/img/champion/" + champ.id + ".png";
+    if (img.getAttribute("src") !== src) {
+      if (fade) img.classList.remove("ready");
+      img.onload = function () { img.classList.add("ready"); };
+      img.onerror = function () { img.classList.add("ready"); };
+      img.src = src;
+    } else {
+      img.classList.add("ready");
+    }
+  }
+
+  /* ── data ── */
+  function toChampion(key, raw) {
+    var tags = (raw.tags || []).map(function (t) { return ROLE_KO[t] || t; });
+    return {
+      id: raw.id || key,
+      name: raw.name || key,
+      role: tags.length ? tags.slice(0, 2).join(" · ") : "챔피언"
+    };
+  }
+
+  function loadData() {
+    el.err.classList.remove("show");
+    el.roll.disabled = true;
+    el.copy.disabled = true;
+    el.meta.textContent = "최신 패치 정보를 불러오는 중…";
+
+    fetch(VERSIONS_URL, { cache: "no-store" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("versions.json HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (versions) {
+        if (!Array.isArray(versions) || !versions.length) throw new Error("버전 목록이 비어 있습니다.");
+        state.version = versions[0];
+        return fetch(CDN + state.version + "/data/ko_KR/champion.json", { cache: "no-store" });
+      })
+      .then(function (r) {
+        if (!r.ok) throw new Error("champion.json HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (data) {
+        var list = [];
+        Object.keys(data.data).forEach(function (k) {
+          var c = data.data[k];
+          if (c && c.id && c.name) list.push(toChampion(k, c));
+        });
+        list.sort(function (a, b) { return a.name.localeCompare(b.name, "ko"); });
+        if (!list.length) throw new Error("챔피언 목록이 비어 있습니다.");
+        state.champions = list;
+        el.meta.innerHTML =
+          "패치 <b>v" + state.version + "</b>" +
+          '<span class="dot">·</span>챔피언 <b>' + list.length + "명</b>";
+        el.ddversion.textContent = "Data Dragon v" + state.version;
+        el.roll.disabled = false;
+        if (!state.result) idleFill();
+      })
+      .catch(function (e) {
+        el.errMsg.textContent = "챔피언 데이터를 불러오지 못했습니다. (" + (e && e.message ? e.message : "네트워크 오류") + ")";
+        el.err.classList.add("show");
+        el.meta.textContent = "패치 정보를 불러오지 못했습니다";
+        if (!state.champions.length) idleFill(true);
+      });
+  }
+
+  function idleFill(failed) {
+    var all = slotsOf(el.blue).concat(slotsOf(el.red));
+    all.forEach(function (slot) {
+      slot.classList.add("empty");
+      slot.querySelector("img").removeAttribute("src");
+      slot.querySelector("img").classList.remove("ready");
+      slot.querySelector(".cname").textContent = failed ? "불러오기 실패" : "—";
+    });
+  }
+
+  /* ── draw ── */
+  function pickTen() {
+    var pool = state.champions;
+    var out = [];
+    if (!state.allowDup) {
+      var copy = pool.slice();
+      for (var i = 0; i < 10; i++) {
+        var idx = Math.floor(Math.random() * copy.length);
+        out.push(copy.splice(idx, 1)[0]);
+      }
+      return out;
+    }
+    for (var j = 0; j < 10; j++) {
+      out.push(pool[Math.floor(Math.random() * pool.length)]);
+    }
+    return out;
+  }
+
+  function roll() {
+    if (state.rolling || !state.champions.length) return;
+    state.rolling = true;
+    el.roll.disabled = true;
+    el.copy.disabled = true;
+
+    var blueSlots = slotsOf(el.blue);
+    var redSlots = slotsOf(el.red);
+    var allSlots = blueSlots.concat(redSlots);
+    var final = pickTen();
+
+    allSlots.forEach(function (s) { s.classList.add("rolling"); });
+
+    var tick = null;
+    var started = Date.now();
+    tick = setInterval(function () {
+      allSlots.forEach(function (s) {
+        if (s.dataset.locked === "1") return;
+        var c = state.champions[Math.floor(Math.random() * state.champions.length)];
+        paint(s, c, false);
+        s.querySelector("img").classList.add("ready");
+      });
+      if (Date.now() - started > 520) {
+        clearInterval(tick);
+        settle();
+      }
+    }, 70);
+
+    function settle() {
+      allSlots.forEach(function (s) { s.dataset.locked = "0"; s.classList.remove("rolling"); });
+      var i = 0;
+      var stepTimer = setInterval(function () {
+        if (i >= 10) {
+          clearInterval(stepTimer);
+          state.rolling = false;
+          el.roll.disabled = false;
+          el.copy.disabled = false;
+          el.roll.textContent = "다시 뽑기";
+          return;
+        }
+        var slot = allSlots[i];
+        paint(slot, final[i], true);
+        slot.classList.add("pulse");
+        (function (s) { setTimeout(function () { s.classList.remove("pulse"); }, 400); })(slot);
+        i++;
+      }, 65);
+
+      state.result = {
+        blue: final.slice(0, 5),
+        red: final.slice(5, 10)
+      };
+    }
+  }
+
+  /* ── copy ── */
+  function resultText() {
+    if (!state.result) return "";
+    var b = state.result.blue.map(function (c) { return c.name; }).join(", ");
+    var r = state.result.red.map(function (c) { return c.name; }).join(", ");
+    return (
+      "[칼바람 5:5 · 패치 v" + state.version + "]\n" +
+      "🔵 블루팀: " + b + "\n" +
+      "🔴 레드팀: " + r
+    );
+  }
+
+  function toast(msg) {
+    el.toast.textContent = msg;
+    el.toast.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { el.toast.classList.remove("show"); }, 1700);
+  }
+
+  function copyResult() {
+    var text = resultText();
+    if (!text) return;
+    function done() {
+      el.copy.classList.add("copied");
+      var old = el.copy.textContent;
+      el.copy.textContent = "복사됨!";
+      toast("결과를 복사했습니다. 붙여넣기 하세요.");
+      setTimeout(function () {
+        el.copy.classList.remove("copied");
+        el.copy.textContent = old;
+      }, 1500);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallback(); });
+    } else {
+      fallback();
+    }
+    function fallback() {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); done(); } catch (e) { toast("복사에 실패했습니다."); }
+      document.body.removeChild(ta);
+    }
+  }
+
+  /* ── dup toggle ── */
+  function setDup(allow) {
+    state.allowDup = allow;
+    el.dupNo.setAttribute("aria-pressed", allow ? "false" : "true");
+    el.dupYes.setAttribute("aria-pressed", allow ? "true" : "false");
+    try { localStorage.setItem("aram-dup", allow ? "1" : "0"); } catch (e) {}
+    if (state.result) roll();
+  }
+
+  el.dupNo.addEventListener("click", function () { setDup(false); });
+  el.dupYes.addEventListener("click", function () { setDup(true); });
+  el.roll.addEventListener("click", roll);
+  el.copy.addEventListener("click", copyResult);
+  el.retry.addEventListener("click", loadData);
+
+  document.addEventListener("keydown", function (e) {
+    if (e.code === "Space" && !/input|textarea/i.test((e.target.tagName || ""))) {
+      var tag = (e.target.tagName || "").toLowerCase();
+      if (tag === "button") return;
+      e.preventDefault();
+      roll();
+    }
+  });
+
+  try { state.allowDup = localStorage.getItem("aram-dup") === "1"; } catch (e) {}
+  el.dupNo.setAttribute("aria-pressed", state.allowDup ? "false" : "true");
+  el.dupYes.setAttribute("aria-pressed", state.allowDup ? "true" : "false");
+
+  loadData();
+})();
+</script>
+</body>
+</html>
